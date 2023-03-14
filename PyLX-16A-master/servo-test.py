@@ -21,7 +21,6 @@ from pylx16a.lx16a import *
 import platform
 import sys
 
-
 def catch_disconnection(func):
     def wrapper(self, *args, **kwargs):
         try:
