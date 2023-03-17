@@ -30,5 +30,5 @@ while True:
     servo1.move(abs(22*sin(-t) + 22))
     servo2.move(abs(27*cos(-t) + 27 ))
 
-    time.sleep(0.02)
+    time.sleep(0.02)   
     t += 0.1
