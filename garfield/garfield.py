@@ -1,11 +1,16 @@
 from pylx16a.lx16a import *
 import serial.tools.list_ports
 import serial.serialutil
+import subprocess
 
-ports = serial.tools.list_ports.comports()
-LX16A.initialize(ports[1].device, 0.1)
+# ports = serial.tools.list_ports.comports()
+# LX16A.initialize(ports[1].device, 0.1)
 
 LX16A.initialize("/dev/ttyUSB0", 0.1)
+
+# initialize imu
+cmd_str = "ldto enable i2c-ao ;i2cdetect -y 1"
+subprocess.run(cmd_str, shell=True)
 
 
 class Garfield():
