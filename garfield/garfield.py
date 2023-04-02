@@ -2,8 +2,10 @@ from pylx16a.lx16a import *
 import serial.tools.list_ports
 import serial.serialutil
 
-# ports = serial.tools.list_ports.comports()
-# LX16A.initialize(ports[1].device, 0.1)
+ports = serial.tools.list_ports.comports()
+LX16A.initialize(ports[1].device, 0.1)
+
+LX16A.initialize("/dev/ttyUSB0", 0.1)
 
 
 class Garfield():
