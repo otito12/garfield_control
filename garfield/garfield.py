@@ -46,21 +46,28 @@ class Garfield():
         self.move_l_leg(0,0,0)
         self.move_r_leg(0,0,0)
         time.sleep(2)
-        for i in range(50):
-            self.move_l_leg(0,0,i)
-            self.move_r_leg(0,0,i)
-            print()
-        time.sleep(2)
-        t = 1
+        # for i in range(50):
+        #     self.move_l_leg(0,0,i)
+        #     self.move_r_leg(0,0,i)
+        #     print()
+        # time.sleep(2)
+        t = 0
         while True:
-            if t == 1:
-                self.move_l_leg(0,0,50)
-                self.move_r_leg(0,0,0)
+            # redementary walk
+            if t == 0:
+                self.move_l_leg(0,0,0,600)
+                # self.move_r_leg(0,0,0)
+                t = 1
+            elif t == 1:
+                self.move_l_leg(50,0,30,600)
+                # self.move_r_leg(0,0,0)
+                t = 2
+            elif t == 2:
+                self.move_l_leg(-80,0,50,600)
+                # self.move_r_leg(0,0,50)
                 t = 0
             else:
-                self.move_l_leg(0,0,0)
-                self.move_r_leg(0,0,50)
-                t = 1
+                break
             time.sleep(.6)
         # self.move_r_leg(0,0,0) #should produce origin pose
         # speech_to_command(self, "move to base origin pose")
@@ -131,39 +138,43 @@ class Garfield():
     # add x,y later
     # consider base pose 0 and mask offsets
     def move_l_leg(self,x,y,z,speed=600):
-        # min 76 mm 
+        min = 76 #76mm min z 
         # hip_offest = 0
         knee_offset = 26.6
         calf_offset = 35.1
         self.l_hip.move(50,speed)
-        
-        # Calc Z
-        knee_angle = knee_angle_z_ik(z+76) + knee_offset
-        calf_angle = calf_angle_z_ik(z+76)+ calf_offset
-        
-        self.l_knee.move(knee_angle,speed)
-        self.l_calf.move(calf_angle,speed)
 
         # Adjust for X 
+        knee_angle_x_delta = math.atan(x/(z+min))
+        print("DD:",knee_angle_x_delta)
+        print("AASC:",math.degrees(knee_angle_x_delta))
 
+        z_delta = z+min/math.cos(knee_angle_x_delta)
+        print("DDAA:",z_delta)
 
-        print("l_k:",knee_angle_z_ik(z+76)+ knee_offset)
-        print("l_c:",calf_angle_z_ik(z+76)+ calf_offset)
+        # Calc Z
+        knee_angle = knee_angle_z_ik(z_delta) + knee_offset - math.degrees(knee_angle_x_delta)
+        calf_angle = calf_angle_z_ik(z_delta)+ calf_offset 
+
+        self.l_knee.move(knee_angle,speed)
+        self.l_calf.move(calf_angle,speed)
+        print("l_k:",knee_angle_z_ik(z+min)+ knee_offset)
+        print("l_c:",calf_angle_z_ik(z+min)+ calf_offset)
 
     # move right leg add x,y later
     def move_r_leg(self,x,y,z,speed=600):
-        # min 76 mm 
+        min = 76 #76mm min z 
         # hip_offest = 0
         knee_offset = -33.4
         calf_offset = 151
         self.r_hip.move(37,speed)
         # becuase the servo is physically flipped but the IK remains the same
-        knee_base = knee_angle_z_ik(76)+ knee_offset
-        calf_base = calf_angle_z_ik(76)+ calf_offset
-        self.r_knee.move(knee_base + (knee_base - (knee_angle_z_ik(z+76)+ knee_offset)),speed)
-        self.r_calf.move(calf_base + (calf_base - (calf_angle_z_ik(z+76)+ calf_offset)),speed)
-        print("r_k:",knee_base + (knee_base - (knee_angle_z_ik(z+76)+ knee_offset)))
-        print("r_c:",calf_base + (calf_base - (calf_angle_z_ik(z+76)+ calf_offset)))
+        knee_base = knee_angle_z_ik(min)+ knee_offset
+        calf_base = calf_angle_z_ik(min)+ calf_offset
+        self.r_knee.move(knee_base + (knee_base - (knee_angle_z_ik(z+min)+ knee_offset)),speed)
+        self.r_calf.move(calf_base + (calf_base - (calf_angle_z_ik(z+min)+ calf_offset)),speed)
+        print("r_k:",knee_base + (knee_base - (knee_angle_z_ik(z+min)+ knee_offset)))
+        print("r_c:",calf_base + (calf_base - (calf_angle_z_ik(z+min)+ calf_offset)))
 
 
     def print_physical_angles(self): # debugging

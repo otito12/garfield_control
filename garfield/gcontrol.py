@@ -25,6 +25,7 @@ count = 0
 
 # # # Right leg
 # # offset_c = 154.8
+# # offset_c = 154.8
 # # offset_k = -20
 # # r_c_angle = offset_c +  calf_angle_fit_z(150)
 # # r_k_angle = offset_k +  knee_angle_fit_z(150)
