@@ -40,37 +40,23 @@ class Garfield():
         self._start_up()
 
     def _start_up(self):
-        # load in servos quit program if fails
-        # self.speak("Hello world, I am garfield")
+        # load in servos; quit program if fails
         self._load_servos()
-        self.move_l_leg(0,0,0)
-        self.move_r_leg(0,0,0)
+
+        # #move to homing position
+        self.move_l_leg(0,0,0,600)
+        self.move_r_leg(0,0,0,600)
+
+        # speak active
+        # self.speak("Hello world, I am garfield")
+        
+        # slepp for a sec
         time.sleep(2)
-        # for i in range(50):
-        #     self.move_l_leg(0,0,i)
-        #     self.move_r_leg(0,0,i)
-        #     print()
-        # time.sleep(2)
-        t = 0
-        while True:
-            # redementary walk
-            if t == 0:
-                self.move_l_leg(0,0,0,600)
-                # self.move_r_leg(0,0,0)
-                t = 1
-            elif t == 1:
-                self.move_l_leg(50,0,30,600)
-                # self.move_r_leg(0,0,0)
-                t = 2
-            elif t == 2:
-                self.move_l_leg(-80,0,50,600)
-                # self.move_r_leg(0,0,50)
-                t = 0
-            else:
-                break
-            time.sleep(.6)
-        # self.move_r_leg(0,0,0) #should produce origin pose
-        # speech_to_command(self, "move to base origin pose")
+
+        # start walk
+        self.walk_forward()
+
+        # listen for commands
         # self.listen()
 
     def _load_servos(self):
@@ -134,10 +120,8 @@ class Garfield():
             print(f"Servo {e.id_} is not responding. Exiting...")
             quit()
     
-    # move left leg 
-    # add x,y later
     # consider base pose 0 and mask offsets
-    def move_l_leg(self,x,y,z,speed=600):
+    def move_l_leg(self,x,y,z,speed=0):
         min = 76 #76mm min z 
         # hip_offest = 0
         knee_offset = 26.6
@@ -146,11 +130,7 @@ class Garfield():
 
         # Adjust for X 
         knee_angle_x_delta = math.atan(x/(z+min))
-        print("DD:",knee_angle_x_delta)
-        print("AASC:",math.degrees(knee_angle_x_delta))
-
         z_delta = z+min/math.cos(knee_angle_x_delta)
-        print("DDAA:",z_delta)
 
         # Calc Z
         knee_angle = knee_angle_z_ik(z_delta) + knee_offset - math.degrees(knee_angle_x_delta)
@@ -158,24 +138,77 @@ class Garfield():
 
         self.l_knee.move(knee_angle,speed)
         self.l_calf.move(calf_angle,speed)
-        print("l_k:",knee_angle_z_ik(z+min)+ knee_offset)
-        print("l_c:",calf_angle_z_ik(z+min)+ calf_offset)
 
     # move right leg add x,y later
-    def move_r_leg(self,x,y,z,speed=600):
+    def move_r_leg(self,x,y,z,speed=0):
         min = 76 #76mm min z 
         # hip_offest = 0
         knee_offset = -33.4
         calf_offset = 151
         self.r_hip.move(37,speed)
+        # Knee Delta
+        knee_angle_x_delta = math.atan(x/(z+min))
+        z_delta = z+min/math.cos(knee_angle_x_delta)
+
         # becuase the servo is physically flipped but the IK remains the same
         knee_base = knee_angle_z_ik(min)+ knee_offset
         calf_base = calf_angle_z_ik(min)+ calf_offset
-        self.r_knee.move(knee_base + (knee_base - (knee_angle_z_ik(z+min)+ knee_offset)),speed)
-        self.r_calf.move(calf_base + (calf_base - (calf_angle_z_ik(z+min)+ calf_offset)),speed)
-        print("r_k:",knee_base + (knee_base - (knee_angle_z_ik(z+min)+ knee_offset)))
-        print("r_c:",calf_base + (calf_base - (calf_angle_z_ik(z+min)+ calf_offset)))
 
+        knee_angle = knee_base + (knee_base - (knee_angle_z_ik(z+min)+ knee_offset)) + math.degrees(knee_angle_x_delta)
+        calf_angle = calf_base + (calf_base - (calf_angle_z_ik(z+min)+ calf_offset)) 
+        
+        self.r_knee.move(knee_angle,speed)
+        self.r_calf.move(calf_angle,speed)
+
+    def walk_forward(self,stride_length=50,walk_rate=.6):
+        # redementary walk
+        arc_phase_array = []
+        state = 0
+        
+        while True:
+            print(60*math.sin(state)-28)
+            state+=.05
+            self.move_l_leg(60*math.sin(state)-28,0,0)
+            time.sleep(.01)
+            # self.move_l_leg(55,0,25,600)
+            # if state == 1:
+            #     self.move_l_leg(55,0,25,600)
+            #     # self.move_r_leg(-80,0,50,600)
+            #     state = 2
+            # elif state == 2:
+            #     self.move_l_leg(-100,0,40,600)
+            #     # self.move_r_leg(0,0,0,600)
+            #     state = 3
+            # step_size = stride_length//walk_rate
+            # for i in range(0,stride_length+step_size,step_size):
+            #     x = i 
+            #     z = math.sqrt(pow((stride_length/2),2) - pow((i - (stride_length/2)),2))
+            #     self.move_l_leg(x,0,z)
+            #     time.sleep(walk_rate)
+            #     print("x:",x,"z:",z)
+
+            # #phase 2 come back
+            # for i in range(stride_length,0-step_size,-step_size):
+            #     self.move_l_leg(x,0,0)
+            #     print("x:",i)
+            #     time.sleep(walk_rate)
+        # while True:
+        #     if state == 0:
+        #         self.move_l_leg(0,0,0,600)
+        #         self.move_r_leg(50,0,30,600)
+        #         state = 1
+        #     elif state == 1:
+        #         self.move_l_leg(50,0,30,600)
+        #         self.move_r_leg(-80,0,50,600)
+        #         state = 2
+        #     elif state == 2:
+        #         self.move_l_leg(-80,0,50,600)
+        #         self.move_r_leg(0,0,0,600)
+        #         state = 0
+        #     else:
+        #         break
+        #     time.sleep(.6)
+        
 
     def print_physical_angles(self): # debugging
         print("l_hip:", self.l_hip.get_physical_angle(),
@@ -191,10 +224,6 @@ class Garfield():
         audio.setProperty("volume", 1)
         audio.say(text)
         audio.runAndWait()
-        # tts = gTTS(text=text, lang="en")
-        # file = "voice.mp3"
-        # tts.save(file)
-        # playsound.playsound(file)
 
     def _get_audio(self):
         r = sr.Recognizer()

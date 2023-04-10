@@ -30,4 +30,4 @@ count = 0
 # # r_c_angle = offset_c +  calf_angle_fit_z(150)
 # # r_k_angle = offset_k +  knee_angle_fit_z(150)
 # # garfiled.r_calf.move(r_c_angle,2000)
-# # garfiled.r_knee.move(r_k_angle,2000)
+# # garf iled.r_knee.move(r_k_angle,2000)
