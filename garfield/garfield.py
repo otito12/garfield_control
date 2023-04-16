@@ -43,7 +43,13 @@ class Garfield():
         # load in servos; quit program if fails
         self._load_servos()
 
+        # implement health check
+        # self._health_check()
+
         # #move to homing position
+        # decided to abandon ik for hip
+        self.l_hip.move(50,600)
+        self.r_hip.move(37,600)
         self.move_l_leg(0,0,0,600)
         self.move_r_leg(0,0,0,600)
 
@@ -126,7 +132,6 @@ class Garfield():
         # hip_offest = 0
         knee_offset = 26.6
         calf_offset = 35.1
-        self.l_hip.move(50,speed)
 
         # Adjust for X 
         knee_angle_x_delta = math.atan(x/(z+min))
@@ -145,7 +150,6 @@ class Garfield():
         # hip_offest = 0
         knee_offset = -33.4
         calf_offset = 151
-        self.r_hip.move(37,speed)
         # Knee Delta
         knee_angle_x_delta = math.atan(x/(z+min))
         z_delta = z+min/math.cos(knee_angle_x_delta)
@@ -163,51 +167,48 @@ class Garfield():
     def walk_forward(self,stride_length=50,walk_rate=.6):
         # redementary walk
         arc_phase_array = []
-        state = 0
-        
-        while True:
-            print(60*math.sin(state)-28)
-            state+=.05
-            self.move_l_leg(60*math.sin(state)-28,0,0)
-            time.sleep(.01)
-            # self.move_l_leg(55,0,25,600)
-            # if state == 1:
-            #     self.move_l_leg(55,0,25,600)
-            #     # self.move_r_leg(-80,0,50,600)
-            #     state = 2
-            # elif state == 2:
-            #     self.move_l_leg(-100,0,40,600)
-            #     # self.move_r_leg(0,0,0,600)
-            #     state = 3
-            # step_size = stride_length//walk_rate
-            # for i in range(0,stride_length+step_size,step_size):
-            #     x = i 
-            #     z = math.sqrt(pow((stride_length/2),2) - pow((i - (stride_length/2)),2))
-            #     self.move_l_leg(x,0,z)
-            #     time.sleep(walk_rate)
-            #     print("x:",x,"z:",z)
 
-            # #phase 2 come back
-            # for i in range(stride_length,0-step_size,-step_size):
-            #     self.move_l_leg(x,0,0)
-            #     print("x:",i)
-            #     time.sleep(walk_rate)
+        # #move to ready position
+        # self.l_hip.move(60,600)
+        # self.r_hip.move(27,600)
+        self.move_l_leg(0,0,85,600)
+        self.move_r_leg(0,0,85,600)
+       
+        time.sleep(1)
+        speed = 300
+        state = 0
+
+        while True:
+            if state == 0:
+                self.move_l_leg(0,0,85,speed//2)
+                self.move_r_leg(0,0,40,speed)
+                state = 1
+            elif state == 1:
+                self.move_l_leg(0,0,40,speed)
+                self.move_r_leg(0,0,85,speed//2)
+                state = 0
+            time.sleep(speed*0.001)
+
         # while True:
-        #     if state == 0:
-        #         self.move_l_leg(0,0,0,600)
-        #         self.move_r_leg(50,0,30,600)
+        #     if state == 0: # key frame
+        #         self.move_l_leg(-60,0,85,speed)
+        #         self.move_r_leg(20,0,55,speed)
         #         state = 1
-        #     elif state == 1:
-        #         self.move_l_leg(50,0,30,600)
-        #         self.move_r_leg(-80,0,50,600)
+        #     elif state == 1: # inbetween
+        #         self.move_l_leg(0,0,55,speed)
+        #         self.move_r_leg(10,0,75,speed)
         #         state = 2
-        #     elif state == 2:
-        #         self.move_l_leg(-80,0,50,600)
-        #         self.move_r_leg(0,0,0,600)
+        #     elif state == 2: # key frame
+        #         self.move_l_leg(20,0,55,speed)
+        #         self.move_r_leg(-60,0,85,speed)
+        #         state = 3
+        #     elif state == 3: # inbetween
+        #         self.move_r_leg(0,0,55,speed)
+        #         self.move_l_leg(10,0,75,speed)
         #         state = 0
         #     else:
         #         break
-        #     time.sleep(.6)
+        #     time.sleep(speed*0.001)
         
 
     def print_physical_angles(self): # debugging
@@ -245,8 +246,38 @@ class Garfield():
                 command = self._get_audio()
                 speech_to_command(self, command)
 
-    
+    def shutdown(self):
+        # to implement
+        pass
 
+    def _health_check(self):
+        # to implement 
+        pass 
+
+
+    
+# def marh(self,stride_length=50,walk_rate=.6):
+#         # redementary walk
+#         arc_phase_array = []
+#         state = 0
+#         # #move to ready position
+#         self.l_hip.move(65,600)
+#         self.r_hip.move(22,600)
+#         self.move_l_leg(0,0,85,600)
+#         self.move_r_leg(0,0,85,600)
+
+#         time.sleep(2)
+#         speed = 300
+#         while True:
+#             if state == 0:
+#                 self.move_l_leg(0,0,85,speed//2)
+#                 self.move_r_leg(0,0,10,speed)
+#                 state = 1
+#             elif state == 1:
+#                 self.move_l_leg(0,0,0,speed)
+#                 self.move_r_leg(0,0,85,speed//2)
+#                 state = 0
+#             time.sleep(speed*0.001)
             
             
 
