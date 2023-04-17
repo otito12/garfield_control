@@ -11,11 +11,12 @@ import math
 # import pyttsx3
 # from gcommands import speech_to_command
 from gkinematics import *
+import pandas as pd
 
 # ports = serial.tools.list_ports.comports()
 # LX16A.initialize(ports[1].device, 0.1)
 
-LX16A.initialize("/dev/ttyUSB0", 0.1)
+# LX16A.initialize("/dev/ttyUSB0", 0.1) oncomment linux
 
 # initialize imu
 # cmd_str = "ldto enable i2c-ao ;i2cdetect -y 1"
@@ -31,6 +32,8 @@ class Garfield():
     r_hip = None
     r_knee = None
     r_calf = None
+    servo_temp = {}
+    servo_angles = {}
 
     # motion
 
@@ -45,7 +48,7 @@ class Garfield():
         self._load_servos()
 
         # implement health check
-        # self._health_check()
+        self._health_check()
 
         # #move to homing position
         # decided to abandon ik for hip
@@ -183,7 +186,7 @@ class Garfield():
         speed = 1000
         state = 0
 
-        while True:
+        for _ in range(10):
             if state == 0:
                 # self.move_l_leg(0, 0, 85, speed//2)
                 # self.move_r_leg(0, 0, 40, speed)
@@ -254,13 +257,39 @@ class Garfield():
     #             speech_to_command(self, command)
 
     def shutdown(self):
-        # to implement
-        pass
+        # Move back to ready then homing positions
+        self.move_l_leg(0, 0, 85, 600)
+        self.move_r_leg(0, 0, 85, 600)
+        time.sleep(1)
+        self.move_l_leg(0, 0, 0, 600)
+        self.move_r_leg(0, 0, 0, 600)
+
+        # turn of motor torque
+        servos = [self.l_hip, self.l_knee, self.l_calf,
+                  self.r_hip, self.r_knee, self.r_calf]
+        for servo in servos:
+            servo.disable_torque()
+
+        # print out logs to csv
+        pd.DataFrame(self.servo_temp).to_csv('servo_temps.csv', index=False)
+        pd.DataFrame(self.servo_angles).to_csv('servo_angles.csv', index=False)
 
     def _health_check(self):
         # to implement
-        pass
-
+        servos = [self.l_hip, self.l_knee, self.l_calf,
+                  self.r_hip, self.r_knee, self.r_calf]
+        if not self.servo_temp:
+            self.servo_temp["time"] = [time.time()]
+            self.servo_angles["time"] = [time.time()]
+            for i in servos:
+                self.servo_temp[i] = [i.get_temp()]
+                self.servo_angles[i] = [i.get_physical_angle()]
+        else:
+            self.servo_temp["time"].append(time.time())
+            self.servo_angles["time"].append(time.time())
+            for i in servos:
+                self.servo_temp[i].append(i.get_temp())
+                self.servo_angles[i].append(i.get_physical_angle())
 
 # def marh(self,stride_length=50,walk_rate=.6):
 #         # redementary walk
