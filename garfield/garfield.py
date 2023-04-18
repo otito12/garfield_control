@@ -1,6 +1,6 @@
 from pylx16a.lx16a import *
 # import serial.tools.list_ports
-import serial.serialutil
+import serial.tools.list_ports
 # import subprocess
 import time
 # import os
@@ -11,10 +11,10 @@ import math
 # import pyttsx3
 # from gcommands import speech_to_command
 from gkinematics import *
-import pandas as pd
+# import pandas as pd
 
-# ports = serial.tools.list_ports.comports()
-# LX16A.initialize(ports[1].device, 0.1)
+ports = serial.tools.list_ports.comports()
+LX16A.initialize(ports[1].device, 0.1)
 
 # LX16A.initialize("/dev/ttyUSB0", 0.1) oncomment linux
 
@@ -52,8 +52,8 @@ class Garfield():
 
         # #move to homing position
         # decided to abandon ik for hip
-        self.l_hip.move(50, 600)
-        self.r_hip.move(37, 600)
+        self.l_hip.move(48, 600)
+        self.r_hip.move(35, 600)
         self.move_l_leg(0, 0, 0, 600)
         self.move_r_leg(0, 0, 0, 600)
 
@@ -134,8 +134,8 @@ class Garfield():
     def move_l_leg(self, x, y, z, speed=0):
         min = 76  # 76mm min z
         # hip_offest = 0
-        knee_offset = 26.6
-        calf_offset = 35.1
+        knee_offset = 10.6 # 26.6
+        calf_offset = 35.1 # 35.1
 
         # Adjust for X
         knee_angle_x_delta = math.atan(x/(z+min))
@@ -153,8 +153,8 @@ class Garfield():
     def move_r_leg(self, x, y, z, speed=0):
         min = 76  # 76mm min z
         # hip_offest = 0
-        knee_offset = -33.4
-        calf_offset = 151
+        knee_offset = -20.4 # -33.4
+        calf_offset = 151 # 151
         # Knee Delta
         knee_angle_x_delta = math.atan(x/(z+min))
         z_delta = z+min/math.cos(knee_angle_x_delta)
@@ -271,8 +271,8 @@ class Garfield():
             servo.disable_torque()
 
         # print out logs to csv
-        pd.DataFrame(self.servo_temp).to_csv('servo_temps.csv', index=False)
-        pd.DataFrame(self.servo_angles).to_csv('servo_angles.csv', index=False)
+        # pd.DataFrame(self.servo_temp).to_csv('servo_temps.csv', index=False)
+        # pd.DataFrame(self.servo_angles).to_csv('servo_angles.csv', index=False)
 
     def _health_check(self):
         # to implement
