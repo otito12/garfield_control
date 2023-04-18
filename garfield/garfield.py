@@ -63,8 +63,16 @@ class Garfield():
         # slepp for a sec
         time.sleep(2)
 
+        self.move_l_leg(0, 0, 85, 600)
+        self.move_r_leg(0, 0, 85, 600)
+
+        time.sleep(2)
+
+        self.move_l_leg(0, 0, 0, 600)
+        self.move_r_leg(0, 0, 0, 600)
+
         # start walk
-        self.walk_forward()
+        # self.walk_forward()
 
         # listen for commands
         # self.listen()
@@ -134,8 +142,8 @@ class Garfield():
     def move_l_leg(self, x, y, z, speed=0):
         min = 76  # 76mm min z
         # hip_offest = 0
-        knee_offset = 10.6 # 26.6
-        calf_offset = 35.1 # 35.1
+        knee_offset = 25 # 26.6 # adjusted for 0 == 10.6
+        calf_offset = 40.1 # 35.1
 
         # Adjust for X
         knee_angle_x_delta = math.atan(x/(z+min))
@@ -153,7 +161,7 @@ class Garfield():
     def move_r_leg(self, x, y, z, speed=0):
         min = 76  # 76mm min z
         # hip_offest = 0
-        knee_offset = -20.4 # -33.4
+        knee_offset = -33.4 # -33.4 # adjusted for 0 == -20.4
         calf_offset = 151 # 151
         # Knee Delta
         knee_angle_x_delta = math.atan(x/(z+min))
@@ -179,11 +187,11 @@ class Garfield():
         # #move to ready position
         # self.l_hip.move(60, 600)
         # self.r_hip.move(27, 600)
-        self.move_l_leg(0, 0, 85, 600)
-        self.move_r_leg(0, 0, 85, 600)
+        self.move_l_leg(0, 0, 55, 600)
+        self.move_r_leg(0, 0, 55, 600)
 
         time.sleep(1)
-        speed = 1000
+        speed = 600
         state = 0
 
         for _ in range(10):
