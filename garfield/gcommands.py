@@ -27,6 +27,7 @@ GARFIELD_CMDS = {
 }
 
 def _get_highest_phrase(token_cmd):
+    # modify to use directed graph or nlp??
     apply_cmd = None
     max_phrase_percent = 0
     for key in GARFIELD_CMDS.keys():

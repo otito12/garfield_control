@@ -1,42 +1,81 @@
 from pylx16a.lx16a import *
+# import serial.tools.list_ports
 import serial.tools.list_ports
-import serial.serialutil
-import subprocess
+# import subprocess
 import time
-import os
-import playsound
-import speech_recognition as sr
-from gtts import gTTS
-import pyttsx3
-from gcommands import speech_to_command
+# import os
+import math
+# import playsound
+# import speech_recognition as sr
+# from gtts import gTTS
+# import pyttsx3
+# from gcommands import speech_to_command
+from gkinematics import *
+# import pandas as pd
 
 ports = serial.tools.list_ports.comports()
 LX16A.initialize(ports[1].device, 0.1)
 
-# LX16A.initialize("/dev/ttyUSB0", 0.1)
+# LX16A.initialize("/dev/ttyUSB0", 0.1) oncomment linux
 
 # initialize imu
 # cmd_str = "ldto enable i2c-ao ;i2cdetect -y 1"
 # subprocess.run(cmd_str, shell=True)
 
+
 class Garfield():
 
+    # Servos
     l_hip = None
     l_knee = None
     l_calf = None
     r_hip = None
     r_knee = None
     r_calf = None
+    servo_temp = {}
+    servo_angles = {}
+
+    # motion
+
+    # Voice control
     wake_phrase = "hey garfield"
 
     def __init__(self):
         self._start_up()
 
     def _start_up(self):
-        # load in servos quit program if fails
-        # self.speak("Hello world, I am garfield")
+        # load in servos; quit program if fails
         self._load_servos()
-        self.listen()
+
+        # implement health check
+        self._health_check()
+
+        # #move to homing position
+        # decided to abandon ik for hip
+        self.l_hip.move(48, 600)
+        self.r_hip.move(35, 600)
+        self.move_l_leg(0, 0, 0, 600)
+        self.move_r_leg(0, 0, 0, 600)
+
+        # speak active
+        # self.speak("Hello world, I am garfield")
+
+        # slepp for a sec
+        time.sleep(2)
+
+        self.move_l_leg(0, 0, 85, 600)
+        self.move_r_leg(0, 0, 85, 600)
+
+        time.sleep(2)
+
+        self.move_l_leg(0, 0, 0, 600)
+        self.move_r_leg(0, 0, 0, 600)
+
+        # start walk
+        # self.walk_forward()
+
+        # listen for commands
+        # self.listen()
 
     def _load_servos(self):
         # ----- init l_hip ----- #
@@ -99,44 +138,186 @@ class Garfield():
             print(f"Servo {e.id_} is not responding. Exiting...")
             quit()
 
-    def print_physical_angles(self): # debugging
+    # consider base pose 0 and mask offsets
+    def move_l_leg(self, x, y, z, speed=0):
+        min = 76  # 76mm min z
+        # hip_offest = 0
+        knee_offset = 25 # 26.6 # adjusted for 0 == 10.6
+        calf_offset = 40.1 # 35.1
+
+        # Adjust for X
+        knee_angle_x_delta = math.atan(x/(z+min))
+        z_delta = z+min/math.cos(knee_angle_x_delta)
+
+        # Calc Z
+        knee_angle = knee_angle_z_ik(
+            z_delta) + knee_offset - math.degrees(knee_angle_x_delta)
+        calf_angle = calf_angle_z_ik(z_delta) + calf_offset
+
+        self.l_knee.move(knee_angle, speed)
+        self.l_calf.move(calf_angle, speed)
+
+    # move right leg add x,y later
+    def move_r_leg(self, x, y, z, speed=0):
+        min = 76  # 76mm min z
+        # hip_offest = 0
+        knee_offset = -33.4 # -33.4 # adjusted for 0 == -20.4
+        calf_offset = 151 # 151
+        # Knee Delta
+        knee_angle_x_delta = math.atan(x/(z+min))
+        z_delta = z+min/math.cos(knee_angle_x_delta)
+
+        # becuase the servo is physically flipped but the IK remains the same
+        knee_base = knee_angle_z_ik(min) + knee_offset
+        calf_base = calf_angle_z_ik(min) + calf_offset
+
+        knee_angle = knee_base + \
+            (knee_base - (knee_angle_z_ik(z+min) + knee_offset)) + \
+            math.degrees(knee_angle_x_delta)
+        calf_angle = calf_base + \
+            (calf_base - (calf_angle_z_ik(z+min) + calf_offset))
+
+        self.r_knee.move(knee_angle, speed)
+        self.r_calf.move(calf_angle, speed)
+
+    def walk_forward(self, stride_length=50, walk_rate=.6):
+        # redementary walk
+        arc_phase_array = []
+
+        # #move to ready position
+        # self.l_hip.move(60, 600)
+        # self.r_hip.move(27, 600)
+        self.move_l_leg(0, 0, 55, 600)
+        self.move_r_leg(0, 0, 55, 600)
+
+        time.sleep(1)
+        speed = 600
+        state = 0
+
+        for _ in range(10):
+            if state == 0:
+                # self.move_l_leg(0, 0, 85, speed//2)
+                # self.move_r_leg(0, 0, 40, speed)
+                self.move_l_leg(0, 0, 85, speed)
+                self.move_r_leg(0, 0, 85, speed)
+                state = 1
+            elif state == 1:
+                # self.move_l_leg(0, 0, 40, speed)
+                # self.move_r_leg(0, 0, 85, speed//2)
+                self.move_l_leg(0, 0, 0, speed)
+                self.move_r_leg(0, 0, 0, speed)
+                state = 0
+            time.sleep(speed*0.001)
+
+        # while True:
+        #     if state == 0: # key frame
+        #         self.move_l_leg(-60,0,85,speed)
+        #         self.move_r_leg(20,0,55,speed)
+        #         state = 1
+        #     elif state == 1: # inbetween
+        #         self.move_l_leg(0,0,55,speed)
+        #         self.move_r_leg(10,0,75,speed)
+        #         state = 2
+        #     elif state == 2: # key frame
+        #         self.move_l_leg(20,0,55,speed)
+        #         self.move_r_leg(-60,0,85,speed)
+        #         state = 3
+        #     elif state == 3: # inbetween
+        #         self.move_r_leg(0,0,55,speed)
+        #         self.move_l_leg(10,0,75,speed)
+        #         state = 0
+        #     else:
+        #         break
+        #     time.sleep(speed*0.001)
+
+    def print_physical_angles(self):  # debugging
         print("l_hip:", self.l_hip.get_physical_angle(),
-                "l_knee:", self.l_knee.get_physical_angle(),
-                "l_calf:", self.l_calf.get_physical_angle(),
-                "r_hip:", self.r_hip.get_physical_angle(),
-                "r_knee:", self.r_knee.get_physical_angle(),
-                "r_calf:", self.r_calf.get_physical_angle())
-    
-    def speak(self,text):
-        audio = pyttsx3.init()
-        audio.setProperty("rate", 150)
-        audio.setProperty("volume", 1)
-        audio.say(text)
-        audio.runAndWait()
-        # tts = gTTS(text=text, lang="en")
-        # file = "voice.mp3"
-        # tts.save(file)
-        # playsound.playsound(file)
+              "l_knee:", self.l_knee.get_physical_angle(),
+              "l_calf:", self.l_calf.get_physical_angle(),
+              "r_hip:", self.r_hip.get_physical_angle(),
+              "r_knee:", self.r_knee.get_physical_angle(),
+              "r_calf:", self.r_calf.get_physical_angle())
 
-    def _get_audio(self):
-        r = sr.Recognizer()
-        with sr.Microphone() as source:
-                audio = r.listen(source)
-                said = ""
-                try:
-                    said = r.recognize_google(audio)
-                except Exception as e: 
-                    print("Expection:" + str(e))
-        return said.lower()
+    # def speak(self, text):
+    #     audio = pyttsx3.init()
+    #     audio.setProperty("rate", 150)
+    #     audio.setProperty("volume", 1)
+    #     audio.say(text)
+    #     audio.runAndWait()
 
+    # def _get_audio(self):
+    #     r = sr.Recognizer()
+    #     with sr.Microphone() as source:
+    #         audio = r.listen(source)
+    #         said = ""
+    #         try:
+    #             said = r.recognize_google(audio)
+    #         except Exception as e:
+    #             print("Expection:" + str(e))
+    #     return said.lower()
 
-    def listen(self): #implement alsways listen on different thread with wake word
-        while True:
-            wakeword = self._get_audio()
-            if wakeword.count(self.wake_phrase) > 0:
-                self.speak("You may speak")
-                command = self._get_audio()
-                speech_to_command(self, command)
-            
-            
+    # def listen(self):  # implement alsways listen on different thread with wake word
+    #     while True:
+    #         wakeword = self._get_audio()
+    #         if wakeword.count(self.wake_phrase) > 0:
+    #             self.speak("You may speak")
+    #             command = self._get_audio()
+    #             speech_to_command(self, command)
 
+    def shutdown(self):
+        # Move back to ready then homing positions
+        self.move_l_leg(0, 0, 85, 600)
+        self.move_r_leg(0, 0, 85, 600)
+        time.sleep(1)
+        self.move_l_leg(0, 0, 0, 600)
+        self.move_r_leg(0, 0, 0, 600)
+
+        # turn of motor torque
+        servos = [self.l_hip, self.l_knee, self.l_calf,
+                  self.r_hip, self.r_knee, self.r_calf]
+        for servo in servos:
+            servo.disable_torque()
+
+        # print out logs to csv
+        # pd.DataFrame(self.servo_temp).to_csv('servo_temps.csv', index=False)
+        # pd.DataFrame(self.servo_angles).to_csv('servo_angles.csv', index=False)
+
+    def _health_check(self):
+        # to implement
+        servos = [self.l_hip, self.l_knee, self.l_calf,
+                  self.r_hip, self.r_knee, self.r_calf]
+        if not self.servo_temp:
+            self.servo_temp["time"] = [time.time()]
+            self.servo_angles["time"] = [time.time()]
+            for i in servos:
+                self.servo_temp[i] = [i.get_temp()]
+                self.servo_angles[i] = [i.get_physical_angle()]
+        else:
+            self.servo_temp["time"].append(time.time())
+            self.servo_angles["time"].append(time.time())
+            for i in servos:
+                self.servo_temp[i].append(i.get_temp())
+                self.servo_angles[i].append(i.get_physical_angle())
+
+# def marh(self,stride_length=50,walk_rate=.6):
+#         # redementary walk
+#         arc_phase_array = []
+#         state = 0
+#         # #move to ready position
+#         self.l_hip.move(65,600)
+#         self.r_hip.move(22,600)
+#         self.move_l_leg(0,0,85,600)
+#         self.move_r_leg(0,0,85,600)
+
+#         time.sleep(2)
+#         speed = 300
+#         while True:
+#             if state == 0:
+#                 self.move_l_leg(0,0,85,speed//2)
+#                 self.move_r_leg(0,0,10,speed)
+#                 state = 1
+#             elif state == 1:
+#                 self.move_l_leg(0,0,0,speed)
+#                 self.move_r_leg(0,0,85,speed//2)
+#                 state = 0
+#             time.sleep(speed*0.001)
